@@ -1,0 +1,74 @@
+column,group,type,units,definition,source,notes
+ADM3_PCODE,identifier,character,code,Woreda P-code (unique geographic key joining every dataset),CSA/BoFED 2021 ADM3 shapefile,Primary key with year+month
+ADM3_EN,identifier,character,name,Woreda name,shapefile,
+ADM2_EN,identifier,character,name,Zone name,shapefile,
+ADM1_EN,identifier,character,name,Region name (current regions; no SNNP),shapefile,
+year,identifier,integer,year,Calendar year 2019-2024,case panel,
+month,identifier,integer,1-12,Calendar month,case panel,
+date,identifier,Date,YYYY-MM-01,First day of the woreda-month,derived,
+shp_lon,geo,numeric,degrees,Woreda centroid longitude (point-on-surface),shapefile,Canonical centroid used for distances
+shp_lat,geo,numeric,degrees,Woreda centroid latitude (point-on-surface),shapefile,
+malaria_total_case,cases,numeric,cases,Reported confirmed malaria cases in the woreda-month,case panel (file 7),NA when the month was not reported (~8.3% of grid)
+reported,cases,logical,TRUE/FALSE,Whether malaria_total_case was actually reported (not imputed and not conflict-missing),derived,FALSE = imputed or conflict-missing month
+conflict_missing,cases,logical,TRUE/FALSE,Tigray war window (2020-11 to 2022-12) where surveillance collapsed,derived,2132 cells; these are set to NA in `cases` instead of 0
+cases,cases,numeric,cases,MODELLING TARGET = malaria_total_case; unreported months imputed to 0 EXCEPT Tigray conflict months which are NA,derived,"NA only in Tigray conflict window (2132 cells); elsewhere unreported -> 0 (flagged by `reported`)"
+population,denominator,numeric,persons,Woreda population for the year,population file,Filled within woreda across imputed months
+facility_count,denominator,numeric,count,Reporting health facilities in the woreda,facility file,Proxy for reporting completeness; varies over time
+malaria_treatment,orig_commodity,numeric,unclear,Aggregate 'treatment' commodity quantity from the CASE dataset,case master (file 4/7),"ANNUAL drug data lumped into single months -> sparse/lumpy; source unit undocumented; DIFFERENT from supply_* columns"
+malaria_diagnostic,orig_commodity,numeric,unclear,Aggregate 'diagnostic' commodity quantity from the case dataset,case master,Same caveats as malaria_treatment
+malaria_prevention,orig_commodity,numeric,unclear,Aggregate 'prevention' commodity quantity from the case dataset,case master,Same caveats as malaria_treatment
+temp_mean,climate,numeric,deg C,Monthly mean 2m air temperature,ERA5 (weekly->monthly mean),
+temp_max,climate,numeric,deg C,Monthly mean of weekly max temperature,ERA5,
+temp_min,climate,numeric,deg C,Monthly mean of weekly min temperature,ERA5,
+temp_range,climate,numeric,deg C,Monthly mean diurnal temperature range,ERA5,
+dewpoint,climate,numeric,deg C,Monthly mean dewpoint,ERA5,
+rh_pct,climate,numeric,percent,Monthly mean relative humidity,ERA5 (Magnus formula),
+wind_speed,climate,numeric,m/s,Monthly mean 10m wind speed,ERA5,
+ndvi,climate,numeric,index,Monthly mean NDVI (vegetation),satellite vegetation indices,94.5% non-NA (some woreda-months lack vegetation data)
+evi,climate,numeric,index,Monthly mean EVI,satellite,94.5% non-NA
+lai,climate,numeric,index,Monthly mean leaf area index,ERA5,
+precip_mm,climate,numeric,mm,Monthly TOTAL rainfall (sum of weekly),ERA5,Flux -> summed (states are averaged)
+n_weeks,climate,integer,count,Weeks aggregated into the month,derived,>=3 required
+precip_mm_l1,climate_lag,numeric,mm,Rainfall lagged 1 month,derived,Strongest case association at lag 2
+precip_mm_l2,climate_lag,numeric,mm,Rainfall lagged 2 months,derived,
+precip_mm_l3,climate_lag,numeric,mm,Rainfall lagged 3 months,derived,
+temp_mean_l1,climate_lag,numeric,deg C,Mean temp lagged 1 month,derived,
+temp_mean_l2,climate_lag,numeric,deg C,Mean temp lagged 2 months,derived,
+temp_mean_l3,climate_lag,numeric,deg C,Mean temp lagged 3 months,derived,
+rh_pct_l1,climate_lag,numeric,percent,Humidity lagged 1 month,derived,
+rh_pct_l2,climate_lag,numeric,percent,Humidity lagged 2 months,derived,
+rh_pct_l3,climate_lag,numeric,percent,Humidity lagged 3 months,derived,
+ndvi_l1,climate_lag,numeric,index,NDVI lagged 1 month,derived,94.5% non-NA
+ndvi_l2,climate_lag,numeric,index,NDVI lagged 2 months,derived,
+ndvi_l3,climate_lag,numeric,index,NDVI lagged 3 months,derived,
+assigned_hub,logistics,character,name,EPSS hub serving the woreda (nearest by road; observed serving where known),Phase 3 + supply serving,
+central_hub,logistics,character,name,National central EPSS warehouse (Addis Ababa [2]),hub table,Same value for all rows
+delivery_type,logistics,character,category,"'two-step' (central->hub->woreda) or 'direct (central hub)' (one-way, leg1=0)",derived,45 woredas direct / 939 two-step
+leg1_km,logistics,numeric,km,Road distance CENTRAL hub -> assigned regional hub,dodgr shortest path on ETH_Roads_2023,0 for direct woredas; median ~430 km
+leg2_km,logistics,numeric,km,Road distance assigned hub -> woreda centroid (last mile),dodgr shortest path,= road_km; median ~130 km
+road_km,logistics,numeric,km,Last-mile road distance hub -> woreda (alias of leg2_km),dodgr,Shortest path over the national road network (WGS84)
+total_km,logistics,numeric,km,Full two-step journey distance = leg1_km + leg2_km,derived,= delivery_km
+delivery_km,logistics,numeric,km,Full journey km used for delivery time (= total_km),derived,
+time_hr,logistics,numeric,hours,"Full two-step one-way delivery time = legs/35kmh + 3h handling per transfer",derived (ASSUME truck_speed 35),Median ~21.5 h
+time_hr_wet,logistics,numeric,hours,Two-step delivery time at wet-season speed (25 km/h),derived,Median ~27.7 h; 936 woredas > 1 driving day
+mean_cases,modeling,numeric,cases,Woreda mean monthly cases over the series,derived,Used for burden tiers
+zero_frac,modeling,numeric,fraction,Share of months with zero cases,derived,
+n_months,modeling,integer,count,Months in the woreda series (72 after grid completion),derived,
+burden_tier,modeling,factor,category,Burden class low/moderate/high/very high (by mean_cases quantiles),derived,For stratified scoring
+signal_rich,modeling,logical,TRUE/FALSE,mean_cases>=20 AND zero_frac<0.2 (eligible for per-woreda SARIMAX),derived,624 woredas TRUE
+need_al_courses,demand,numeric,courses,"DEMAND (from cases): AL courses needed = cases x (1 - severe_frac) x courses_per_case (uncomplicated Pf)",derived (ASSUME severe_frac=0.03),"Case-DERIVED requirement; NOT the supply_* issued columns. NA where cases is NA (Tigray conflict)"
+need_artesunate,demand,numeric,patient-courses,"DEMAND (from cases): severe patients needing artesunate = cases x severe_frac. 1 course = 1 patient (multiple vials)",derived (ASSUME severe_frac=0.03),"3% of cases assumed severe (national ~2%); NA where cases is NA. NOT vials"
+annual_need_al_courses,demand,numeric,courses,Annual sum of need_al_courses per woreda-year,derived,For the deployed-vs-need comparison
+annual_need_artesunate,demand,numeric,patient-courses,Annual sum of need_artesunate per woreda-year,derived,
+al_coverage_ratio,coverage,numeric,ratio,"DEPLOYED / NEEDED AL courses (supply_al_courses_est / annual_need_al_courses). >1 over-supplied <1 shortfall",derived,"Only where supply exists (2019). Carton x30 assumption VALIDATED via UnitPrice/30 = 4-40 birr/course matching real AL procurement; median coverage ~5x"
+artesunate_coverage_ratio,coverage,numeric,ratio,DEPLOYED vials / NEEDED vials (need patient-courses x vials_per_course),derived (ASSUME vials_per_course=6),Only where supply exists (2019); mostly <1 (under-supplied)
+al_cases_treatable,coverage,numeric,cases,"DEPLOYED AL expressed as cases it can treat = supply_al_courses_est / courses_per_case (uncomplicated Pf cases)",derived,'Worth N cases' view; compare to actual caseload
+artesunate_cases_treatable,coverage,numeric,cases,DEPLOYED artesunate expressed as severe cases it can treat = supply_artesunate / vials_per_course,derived (ASSUME vials_per_course=6),
+total_cases_treatable,coverage,numeric,cases,Total malaria cases the deployed antimalarials could treat (al_cases_treatable + artesunate_cases_treatable),derived,NA where no supply (non-2019)
+supply_al_cartons,supply,numeric,cartons,AL cartons issued (SUM across weight bands). 1 carton = 30 blister-strips = 30 courses,EPSS EFY2010 distribution,"Carton unit VALIDATED via UnitPrice/30. NA except 2019 (only EFY2010) and unmatched/unserved woredas"
+supply_al_courses_est,supply,numeric,courses,AL patient-equivalent courses issued = supply_al_cartons x 30,derived (ASSUME al_courses_per_carton=30),Deployed AL in courses; compare to need_al_courses. NA as above
+supply_artesunate,supply,numeric,vials,Artesunate injection units issued (severe malaria),EPSS EFY2010,"Unit = 'Each'/vial (NOT patients; ~6 vials per severe course). NA as above"
+supply_chloroquine,supply,numeric,units,Chloroquine issued (P. vivax treatment),EPSS EFY2010,NA as above
+supply_primaquine,supply,numeric,units,Primaquine issued (P. vivax radical cure),EPSS EFY2010,NA as above
+supply_rdt_tests,supply,numeric,tests,Malaria RDT diagnostic tests issued,EPSS EFY2010,Mostly 25-test kits. NA as above
+supply_year_obs,supply,logical,TRUE/FALSE,Whether the woreda-year has observed supply data,derived,"Supply EFY years map ORDINALLY to case years: EFY2010->2019 2011->2020 ... 2015->2024. Only EFY2010 provided so far -> TRUE only for 2019 (11.3% of rows). Add EFY2011-2015 to fill 2020-2024"

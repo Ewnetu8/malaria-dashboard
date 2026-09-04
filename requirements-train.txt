@@ -1,0 +1,7 @@
+# Extra dependencies needed ONLY to re-run the training/optimization scripts
+# in src/ (not needed to just run the deployed app.py dashboard).
+-r requirements.txt
+scikit-learn
+xgboost
+tensorflow-cpu
+pulp
