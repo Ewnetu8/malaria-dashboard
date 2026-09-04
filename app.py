@@ -37,8 +37,16 @@ if "credentials" not in st.secrets:
         "Streamlit Cloud app's Secrets panel, then edit the usernames/passwords."
     )
     st.stop()
+#credentials = {"usernames": dict(st.secrets["credentials"]["usernames"])}
+def _to_plain_dict(obj):
+    """Recursively convert Streamlit's read-only secrets objects into normal,
+    mutable Python dicts so streamlit_authenticator can modify them (e.g. to
+    replace plain-text passwords with hashed ones)."""
+    if hasattr(obj, "items"):
+        return {k: _to_plain_dict(v) for k, v in obj.items()}
+    return obj
 
-credentials = {"usernames": dict(st.secrets["credentials"]["usernames"])}
+credentials = _to_plain_dict(st.secrets["credentials"])
 
 authenticator = stauth.Authenticate(
     credentials,
