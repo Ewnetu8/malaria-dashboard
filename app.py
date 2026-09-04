@@ -112,16 +112,16 @@ with tab2:
             model_frame[["ADM3_PCODE", "shp_lat", "shp_lon", "ADM1_EN", "burden_tier"]]
             .drop_duplicates("ADM3_PCODE"),
             on="ADM3_PCODE", how="left")
-        fig = px.scatter_mapbox(
+        fig = px.scatter_map(
             latest, lat="shp_lat", lon="shp_lon", size="forecast_cases",
             color="burden_tier",
             category_orders={"burden_tier": ["very high", "high", "moderate", "low"]},
             hover_name="ADM3_EN", hover_data=["ADM1_EN", "forecast_cases"],
             zoom=4.6, height=550, size_max=28,
             title="Next-month forecast cases by woreda",
+            map_style="carto-positron",
         )
-        fig.update_layout(mapbox_style="carto-positron", margin=dict(l=0, r=0, t=40, b=0))
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(margin=dict(l=0, r=0, t=40, b=0))   
     else:
         st.info("Run src/generate_forecast.py to populate this map.")
 
